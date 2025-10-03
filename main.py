@@ -53,65 +53,6 @@ async def show_random_emojis(message):
     emoji_message = await message.reply_text(' '.join(random.choices(emojis, k=1)))
     return emoji_message
     
-# Define the owner's user ID
-OWNER_ID = 5840594311 # Replace with the actual owner's user ID
-
-# List of sudo users (initially empty or pre-populated)
-SUDO_USERS = [5840594311]
-
-# ✅ Multiple AUTH CHANNELS allowed
-AUTH_CHANNELS = [-1002605113558,-1002663510614]  # Add more channel IDs here
-
-# Function to check if a user is authorized
-def is_authorized(user_id: int) -> bool:
-    return (
-        user_id == OWNER_ID
-        or user_id in SUDO_USERS
-        or user_id in AUTH_CHANNELS  # ✅ Checks if user_id matches any channel ID
-    )
-
-
-bot = Client(
-    "bot",
-    api_id=API_ID,
-    api_hash=API_HASH,
-    bot_token=BOT_TOKEN)
-
-# Sudo command to add/remove sudo users
-@bot.on_message(filters.command("sudo"))
-async def sudo_command(bot: Client, message: Message):
-    user_id = message.chat.id
-    if user_id != OWNER_ID:
-        await message.reply_text("**🚫 You are not authorized to use this command.**")
-        return
-
-    try:
-        args = message.text.split(" ", 2)
-        if len(args) < 2:
-            await message.reply_text("**Usage:** `/sudo add <user_id>` or `/sudo remove <user_id>`")
-            return
-
-        action = args[1].lower()
-        target_user_id = int(args[2])
-
-        if action == "add":
-            if target_user_id not in SUDO_USERS:
-                SUDO_USERS.append(target_user_id)
-                await message.reply_text(f"**✅ User {target_user_id} added to sudo list.**")
-            else:
-                await message.reply_text(f"**⚠️ User {target_user_id} is already in the sudo list.**")
-        elif action == "remove":
-            if target_user_id == OWNER_ID:
-                await message.reply_text("**🚫 The owner cannot be removed from the sudo list.**")
-            elif target_user_id in SUDO_USERS:
-                SUDO_USERS.remove(target_user_id)
-                await message.reply_text(f"**✅ User {target_user_id} removed from sudo list.**")
-            else:
-                await message.reply_text(f"**⚠️ User {target_user_id} is not in the sudo list.**")
-        else:
-            await message.reply_text("**Usage:** `/sudo add <user_id>` or `/sudo remove <user_id>`")
-    except Exception as e:
-        await message.reply_text(f"**Error:** {str(e)}")
 
 # Inline keyboard for start command
 keyboard = InlineKeyboardMarkup(
@@ -171,9 +112,6 @@ async def restart_handler(_, m: Message):
 
 @bot.on_message(filters.command("restart"))
 async def restart_handler(_, m):
-    if not is_authorized(m.from_user.id):
-        await m.reply_text("**🚫 You are not authorized to use this command.**")
-        return
     await m.reply_text("🔮Restarted🔮", True)
     os.execl(sys.executable, sys.executable, *sys.argv)
 
@@ -182,9 +120,6 @@ COOKIES_FILE_PATH = "youtube_cookies.txt"
 
 @bot.on_message(filters.command("cookies") & filters.private)
 async def cookies_handler(client: Client, m: Message):
-    if not is_authorized(m.from_user.id):
-        await m.reply_text("🚫 You are not authorized to use this command.")
-        return
     """
     Command: /cookies
     Allows any user to upload a cookies file dynamically.
@@ -392,11 +327,6 @@ async def ytplaylist_to_txt(client: Client, message: Message):
     """
     Handles the extraction of YouTube playlist/channel videos and sends a .txt file.
     """
-    user_id = message.chat.id
-    if user_id != OWNER_ID:
-        await message.reply_text("**🚫 You are not authorized to use this command.\n\n🫠 This Command is only for owner.**")
-        return
-
     # Request YouTube URL
     await message.delete()
     editable = await message.reply_text("📥 **Please enter the YouTube Playlist Url :**")
@@ -417,17 +347,6 @@ async def ytplaylist_to_txt(client: Client, message: Message):
     else:
         await message.reply_text("⚠️ **Unable to retrieve videos. Please check the URL.**")
 
-        
-# List users command
-@bot.on_message(filters.command("userlist") & filters.user(SUDO_USERS))
-async def list_users(client: Client, msg: Message):
-    if SUDO_USERS:
-        users_list = "\n".join([f"User ID : `{user_id}`" for user_id in SUDO_USERS])
-        await msg.reply_text(f"SUDO_USERS :\n{users_list}")
-    else:
-        await msg.reply_text("No sudo users.")
-
-
 # Help command
 @bot.on_message(filters.command("help"))
 async def help_command(client: Client, msg: Message):
@@ -439,9 +358,6 @@ async def help_command(client: Client, msg: Message):
         "`/cookies` - Upload cookies file🍪\n\n"
         "`/e2t` - Edit txt file📝\n\n"
         "`/yt2txt` - Create txt of yt playlist (owner)🗃️\n\n"
-        "`/sudo add` - Add user or group or channel (owner)🎊\n\n"
-        "`/sudo remove` - Remove user or group or channel (owner)❌\n\n"
-        "`/userlist` - List of sudo user or group or channel📜\n\n"
        
     )
     await msg.reply_text(help_text)
@@ -449,10 +365,6 @@ async def help_command(client: Client, msg: Message):
 # Upload command handler
 @bot.on_message(filters.command(["tushar"]))
 async def upload(bot: Client, m: Message):
-    if not is_authorized(m.chat.id):
-        await m.reply_text("**🚫You are not authorized to use this bot.**")
-        return
-
     editable = await m.reply_text(f"⚡𝗦𝗘𝗡𝗗 𝗧𝗫𝗧 𝗙𝗜𝗟𝗘⚡")
     input: Message = await bot.listen(editable.chat.id)
     x = await input.download()
@@ -505,7 +417,7 @@ async def upload(bot: Client, m: Message):
         b_name = raw_text0
     
 
-    await editable.edit("**📸 𝗘𝗻𝘁𝗲𝗿 𝗥𝗲𝘀𝗼𝗹𝘂𝘁𝗶𝗼𝗻 📸**\n➤ `144`\n➤ `240`\n➤ `360`\n➤ `480`\n➤ `720`\n➤ `1080`")
+    await editable.edit("📸 𝗘𝗻𝘁𝗲𝗿 𝗥𝗲𝘀𝗼𝗹𝘂𝘁𝗶𝗼𝗻 📸**\n➤ `144`\n➤ `240`\n➤ `360`\n➤ `480`\n➤ `720`\n➤ `1080`")
     input2: Message = await bot.listen(editable.chat.id)
     raw_text2 = input2.text
     await input2.delete(True)
@@ -589,7 +501,7 @@ async def upload(bot: Client, m: Message):
                 async with ClientSession() as session:
                     async with session.get(url, headers={'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9', 'Accept-Language': 'en-US,en;q=0.9', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', 'Pragma': 'no-cache', 'Referer': 'http://www.visionias.in/', 'Sec-Fetch-Dest': 'iframe', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'cross-site', 'Upgrade-Insecure-Requests': '1', 'User-Agent': 'Mozilla/5.0 (Linux; Android 12; RMX2121) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Mobile Safari/537.36', 'sec-ch-ua': '"Chromium";v="107", "Not=A?Brand";v="24"', 'sec-ch-ua-mobile': '?1', 'sec-ch-ua-platform': '"Android"',}) as resp:
                         text = await resp.text()
-                        url = re.search(r"(https://.*?playlist.m3u8.*?)\"", text).group(1)
+                        url = re.search(r[](https://.*?playlist.m3u8.*?)\"", text).group(1)
                         
             elif 'media-cdn.classplusapp.com/drm/' in url:
                 url = f"https://dragoapi.vercel.app/video/{url}"
@@ -688,13 +600,13 @@ async def upload(bot: Client, m: Message):
                 cmd = f'yt-dlp -f "{ytf}" "{url}" -o "{name}.mp4"'
 
             try:  
-                cc = f'**[🎬] 𝗩𝗶𝗱_𝗜𝗱 : {str(count).zfill(3)}.\n\n\n☘️𝗧𝗶𝘁𝗹𝗲 𝗡𝗮𝗺𝗲 ➤ {name1}.({res}).𝔗𝔲𝔰𝔥𝔞𝔯.mkv\n\n\n<pre><code>📚𝗕𝗮𝘁𝗰𝗵 𝗡𝗮𝗺𝗲 ➤ {b_name}</code></pre>\n\n\n📥 𝗘𝘅𝘁𝗿𝗮𝗰𝘁𝗲𝗱 𝗕𝘆 ➤  {CR}**'
+                cc = f'Video {str(count).zfill(3)}: {name1}.mkv\nBatch: {b_name}\nExtracted by: {CR}'
                 #cpw = f'**[🎬] 𝗩𝗶𝗱_𝗜𝗱 : {str(count).zfill(3)}.\n\n\n☘️𝗧𝗶𝘁𝗹𝗲 𝗡𝗮𝗺𝗲 ➤ {name1}.({res}).𝔗𝔲𝔰𝔥𝔞𝔯.mkv\n\n\n🔗𝗩𝗶𝗱𝗲𝗼 𝗨𝗿𝗹 ➤ <a href="{url}">__Click Here to Watch Video__</a>\n\n\n<pre><code>📚𝗕𝗮𝘁𝗰𝗵 𝗡𝗮𝗺𝗲 ➤ {b_name}</code></pre>\n\n\n📥 𝗘𝘅𝘁𝗿𝗮𝗰𝘁𝗲𝗱 𝗕𝘆 ➤  {CR}**'
                 #cyt = f'**[🎬] 𝗩𝗶𝗱_𝗜𝗱 : {str(count).zfill(3)}.\n\n\n☘️𝗧𝗶𝘁𝗹𝗲 𝗡𝗮𝗺𝗲 ➤ {name1}.({res}).𝔗𝔲𝔰𝔥𝔞𝔯.mp4\n\n\n🔗𝗩𝗶𝗱𝗲𝗼 𝗨𝗿𝗹 ➤ <a href="{url}">__Click Here to Watch Video__</a>\n\n\n<pre><code>📚𝗕𝗮𝘁𝗰𝗵 𝗡𝗮𝗺𝗲 ➤ {b_name}</code></pre>\n\n\n📥 𝗘𝘅𝘁𝗿𝗮𝗰𝘁𝗲𝗱 𝗕𝘆 ➤  {CR}**'
-                cpvod = f'**[🎬] 𝗩𝗶𝗱_𝗜𝗱 : {str(count).zfill(3)}.\n\n\n☘️𝗧𝗶𝘁𝗹𝗲 𝗡𝗮𝗺𝗲 ➤ {name1}.({res}).𝔗𝔲𝔰𝔥𝔞𝔯.mkv\n\n\n🔗𝗩𝗶𝗱𝗲𝗼 𝗨𝗿𝗹 ➤ <a href="{url}">__Click Here to Watch Video__</a>\n\n\n<pre><code>📚𝗕𝗮𝘁𝗰𝗵 𝗡𝗮𝗺𝗲 ➤ {b_name}</code></pre>\n\n\n📥 𝗘𝘅𝘁𝗿𝗮𝗰𝘁𝗲𝗱 𝗕𝘆 ➤  {CR}**'
-                cimg = f'**[📁] 𝗜𝗺𝗴_𝗜𝗱 : {str(count).zfill(3)}.\n\n\n☘️𝗧𝗶𝘁𝗹𝗲 𝗡𝗮𝗺𝗲 ➤ {name1}.𝔗𝔲𝔰𝔥𝔞𝔯.jpg\n\n\n<pre><code>📚𝗕𝗮𝘁𝗰𝗵 𝗡𝗮𝗺𝗲 ➤ {b_name}</code></pre>\n\n\n📥 𝗘𝘅𝘁𝗿𝗮𝗰𝘁𝗲𝗱 𝗕𝘆 ➤  {CR}**'
-                cczip = f'**[📁] 𝗣𝗱𝗳_𝗜𝗱 : {str(count).zfill(3)}.\n\n\n☘️𝗧𝗶𝘁𝗹𝗲 𝗡𝗮𝗺𝗲 ➤ {name1}.𝔗𝔲𝔰𝔥𝔞𝔯.zip\n\n\n<pre><code>📚𝗕𝗮𝘁𝗰𝗵 𝗡𝗮𝗺𝗲 ➤ {b_name}</code></pre>\n\n\n📥 𝗘𝘅𝘁𝗿𝗮𝗰𝘁𝗲𝗱 𝗕𝘆 ➤  {CR}**'
-                cc1 = f'**[📁] 𝗣𝗱𝗳_𝗜𝗱 : {str(count).zfill(3)}.\n\n\n☘️𝗧𝗶𝘁𝗹𝗲 𝗡𝗮𝗺𝗲 ➤ {name1}.𝔗𝔲𝔰𝔥𝔞𝔯.pdf\n\n\n<pre><code>📚𝗕𝗮𝘁𝗰𝗵 𝗡𝗮𝗺𝗲 ➤ {b_name}</code></pre>\n\n\n📥 𝗘𝘅𝘁𝗿𝗮𝗰𝘁𝗲𝗱 𝗕𝘆 ➤  {CR}**'
+                cpvod = f'Video {str(count).zfill(3)}: {name1}.mkv\nBatch: {b_name}\nExtracted by: {CR}'
+                cimg = f'Image {str(count).zfill(3)}: {name1}.jpg\nBatch: {b_name}\nExtracted by: {CR}'
+                cczip = f'Zip {str(count).zfill(3)}: {name1}.zip\nBatch: {b_name}\nExtracted by: {CR}'
+                cc1 = f'Pdf {str(count).zfill(3)}: {name1}.pdf\nBatch: {b_name}\nExtracted by: {CR}'
           
                 if "drive" in url:
                     try:
@@ -873,5 +785,3 @@ async def upload(bot: Client, m: Message):
     await m.reply_text(f"<pre><code>『😏𝗥𝗲𝗮𝗰𝘁𝗶𝗼𝗻 𝗞𝗼𝗻 𝗗𝗲𝗴𝗮😏』</code></pre>")                 
 
 bot.run()
-if __name__ == "__main__":
-    asyncio.run(main())
