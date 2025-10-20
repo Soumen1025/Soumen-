@@ -1,22 +1,37 @@
-# Use a newer Debian base image (Bullseye instead of Buster)
-FROM python:3.10.8-slim-bullseye
+# Base image (latest stable & supported)
+FROM python:3.10-slim-bullseye
 
-# Install dependencies
+# Set environment variables to prevent Python buffering and cache issues
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install essential system dependencies
 RUN apt-get update -y && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends gcc libffi-dev musl-dev ffmpeg aria2 python3-pip \
+    && apt-get install -y --no-install-recommends \
+       gcc \
+       libffi-dev \
+       musl-dev \
+       ffmpeg \
+       aria2 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy project files into the container
-COPY . /app/
-WORKDIR /app/
+# Copy your app files
+WORKDIR /app
+COPY . .
 
 # Install Python dependencies
-RUN pip3 install --no-cache-dir --upgrade --requirement requirements.txt
-RUN pip install pytube
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip install pytube
 
-# Set environment variable
+# Environment variable for cookies file
 ENV COOKIES_FILE_PATH="youtube_cookies.txt"
 
-# Start the app
-CMD gunicorn app:app & python3 main.py
+# Expose port for Gunicorn (default 8000)
+EXPOSE 8000
+
+# Final command (run web + main script)
+CMD gunicorn app:app --bind 0.0.0.0:8000 & python3 main.py
