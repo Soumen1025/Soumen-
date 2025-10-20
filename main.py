@@ -568,19 +568,21 @@ async def upload(bot: Client, m: Message):
     await input6.delete(True)
     await editable.delete()
 
-    #thumb = input6.text
-    #if thumb.startswith("http://") or thumb.startswith("https://"):
-        #getstatusoutput(f"wget '{thumb}' -O 'thumb.jpg'")
-        #thumb = "thumb.jpg"
-thumb = "no"
-        thumb == "no"
-    failed_count =0
-    if len(links) == 1:
-        count = 1
-    else:
-        count = int(raw_text)
+#thumb = input6.text
+if thumb.startswith("http://") or thumb.startswith("https://"):
+    #getstatusoutput(f"wget '{thumb}' -O 'thumb.jpg'")
+    thumb = "thumb.jpg"
+else:
+    thumb = "no"
 
-    try:
+failed_count = 0
+if len(links) == 1:
+    count = 1
+else:
+    count = int(raw_text)
+
+try:
+    # ekhane try block er code thakbe
         for i in range(count - 1, len(links)):
             V = links[i][1].replace("file/d/","uc?export=download&id=").replace("www.youtube-nocookie.com/embed", "youtu.be").replace("?modestbranding=1", "").replace("/view?usp=sharing","") # .replace("mpd","m3u8")
             url = "https://" + V
